@@ -2,8 +2,8 @@
 #include <stdio.h>
 
 //Screen dimension constants
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 1024;
+const int SCREEN_HEIGHT = 1024;
 
 //Start SDL and create window
 bool init();
@@ -14,6 +14,7 @@ bool loadMedia();
 //Free media and shut down SDL
 void close();
 
+//Avoid these global variables
 //Render window
 SDL_Window* gWindow = NULL;
 
@@ -34,7 +35,7 @@ bool init()
 		success=false;
 	}else{
 		//create window
-		gWindow = SDL_CreateWindow("SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		gWindow = SDL_CreateWindow("SDL Project", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		if(gWindow == NULL){
 			printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
 			success=false;
@@ -80,12 +81,24 @@ int main(int argc, char* args[])
 		if(!loadMedia()){
 			printf("Failed to load media!\n");
 		}else{
-			//Apply image
-			SDL_BlitSurface(gDice, NULL, gScreenSurface, NULL);
-			//Update Surface
-			SDL_UpdateWindowSurface(gWindow);
-			//Hack to get window to stay up
-			SDL_Event e; bool quit = false; while( quit == false ){ while( SDL_PollEvent( &e ) ){ if( e.type == SDL_QUIT ) quit = true; } }
+			//loop flag
+			bool quit = false;
+			//event handler
+			SDL_Event e;
+
+			while(!quit){
+				//Handle events on queue
+				while(SDL_PollEvent( &e ) != 0){
+					//user requests quit
+					if(e.type==SDL_QUIT){
+						quit=true;
+					}
+				}
+				//Apply image
+				SDL_BlitSurface(gDice, NULL, gScreenSurface, NULL);
+				//Update Surface
+				SDL_UpdateWindowSurface(gWindow);
+			}
 		}
 	}
 

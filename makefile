@@ -38,7 +38,6 @@ clean cls:
 	rm -f *~ \#*
 
 git:
-	git add *.[cpph] ?akefile
+	git add *.cpp ?akefile
 	git commit -m"git make"
 	git push
-
