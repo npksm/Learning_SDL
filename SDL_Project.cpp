@@ -1,4 +1,7 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+//#include <SDL2/SDL_ttf.h>
+//#include <SDL2/SDL_mixer.h>
 #include <stdio.h>
 #include <string>
 
@@ -29,9 +32,15 @@ void close();
 //load individual image
 SDL_Surface* loadSurface(std::string path);
 
+//load inidividual image as texture
+SDL_Texture* loadTexture( std::string path);
+
 //Avoid these global variables
 //Render window
 SDL_Window* gWindow = NULL;
+
+//Window renderer
+SDL_Renderer* gRenderer = NULL;
 
 //Surface contained by the window
 SDL_Surface* gScreenSurface = NULL;
@@ -40,7 +49,10 @@ SDL_Surface* gScreenSurface = NULL;
 SDL_Surface* gKeyPressSurface[ KEY_PRESS_SURFACE_TOTAL ];
 
 //Current displayed image
-SDL_Surface* gCurrentSurface = NULL;
+SDL_Surface* gStretchedSurface = NULL;
+
+//current texture
+SDL_Texture* gTexture = NULL;
 
 bool init()
 {
@@ -119,13 +131,25 @@ void close()
 
 SDL_Surface* loadSurface( std::string path)
 {
+	//final optimized image
+	SDL_Surface* optimizedSurface = NULL;
+
 	//Load image at specified path
 	SDL_Surface* loadedSurface = SDL_LoadBMP(path.c_str());
 	if(loadedSurface==NULL){
 		printf("Unable to load image %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
+	}else{
+		//convert to screen format
+		optimizedSurface = SDL_ConvertSurface(loadedSurface, gScreenSurface->format, 0);
+		if(optimizedSurface ==NULL){
+			printf("Unable to optimize image %s! SDL Error: %s\n", path.c_str(), SDL_GetError());
+		}
+
+		//get rid of old loaded surface
+		SDL_FreeSurface(loadedSurface);
 	}
 
-	return loadedSurface;
+	return optimizedSurface;
 }
 
 int main(int argc, char* args[])
@@ -142,7 +166,7 @@ int main(int argc, char* args[])
 			//event handler
 			SDL_Event e;
 			//set default surface
-			gCurrentSurface = gKeyPressSurface[KEY_PRESS_SURFACE_DEFAULT];
+			gStretchedSurface = gKeyPressSurface[KEY_PRESS_SURFACE_DEFAULT];
 
 			while(!quit){
 				//Handle events on queue
@@ -153,26 +177,31 @@ int main(int argc, char* args[])
 					}else if(e.type==SDL_KEYDOWN){
 						switch(e.key.keysym.sym){
 							case SDLK_UP:
-								gCurrentSurface = gKeyPressSurface[KEY_PRESS_SURFACE_UP];
+								gStretchedSurface = gKeyPressSurface[KEY_PRESS_SURFACE_UP];
 								break;
 							case SDLK_DOWN:
-								gCurrentSurface = gKeyPressSurface[KEY_PRESS_SURFACE_DOWN];
+								gStretchedSurface = gKeyPressSurface[KEY_PRESS_SURFACE_DOWN];
 								break;
 							case SDLK_LEFT:
-								gCurrentSurface = gKeyPressSurface[KEY_PRESS_SURFACE_LEFT];
+								gStretchedSurface = gKeyPressSurface[KEY_PRESS_SURFACE_LEFT];
 								break;
 							case SDLK_RIGHT:
-								gCurrentSurface = gKeyPressSurface[KEY_PRESS_SURFACE_RIGHT];
+								gStretchedSurface = gKeyPressSurface[KEY_PRESS_SURFACE_RIGHT];
 								break;
 							default:
-								gCurrentSurface = gKeyPressSurface[KEY_PRESS_SURFACE_DEFAULT];
+								gStretchedSurface = gKeyPressSurface[KEY_PRESS_SURFACE_DEFAULT];
 								break;
 						}
 					}
 				}
 
 				//Apply image
-				SDL_BlitSurface(gCurrentSurface, NULL, gScreenSurface, NULL);
+				SDL_Rect stretchRect;
+				stretchRect.x=0;
+				stretchRect.y=0;
+				stretchRect.w=SCREEN_WIDTH;
+				stretchRect.h=SCREEN_HEIGHT;
+				SDL_BlitScaled(gStretchedSurface, NULL, gScreenSurface, &stretchRect);
 				//Update Surface
 				SDL_UpdateWindowSurface(gWindow);
 			}
