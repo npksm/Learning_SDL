@@ -104,7 +104,7 @@ bool loadMedia(){
 	bool success = true;
 
 	//rendering
-	gTexture = loadTexture();
+	gTexture = loadTexture("images/4.bmp");
 	if(gTexture==NULL){
 		printf("Failed to load texture image!\n");
 		success=false;

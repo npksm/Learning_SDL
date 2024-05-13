@@ -5,7 +5,7 @@
 CC = g++
 
 CFLAGS = -w 
-LINKER_FLAGS = -lSDL2
+LINKER_FLAGS = -lSDL2 -lSDL2_image
 
 #Program name variables
 PROG1 = SDL_Project
