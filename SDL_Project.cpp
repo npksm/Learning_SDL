@@ -64,6 +64,11 @@ bool init()
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
 		success=false;
 	}else{
+		//set texture filtering to linear
+		if(!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")){
+			printf("Warning: Linear texture filtering not enabled!");
+		}
+
 		//create window
 		gWindow = SDL_CreateWindow("SDL Project", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 		if(gWindow == NULL){
@@ -72,6 +77,24 @@ bool init()
 		}else{
 			//get window surface
 			gScreenSurface = SDL_GetWindowSurface(gWindow);
+
+			//create renderer for window
+			gRenderer = SDL_CreateRenderer( gWindow, -1, SDL_RENDERER_ACCELERATED);
+			if(gRenderer ==NULL){
+				printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+				success=false;
+			}else{
+				//initialize renderer color
+				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+
+				//initialize PNG loading
+				int imgFlags = IMG_INIT_PNG;
+				if(!(IMG_Init(imgFlags)&imgFlags)){
+					printf( "SDL_image could not initialize! SDL_image Error: %s\n", IMG_GetError());
+					success=false;
+				}
+			}
+
 		}
 	}
 	return success;
@@ -79,6 +102,13 @@ bool init()
 
 bool loadMedia(){
 	bool success = true;
+
+	//rendering
+	gTexture = loadTexture();
+	if(gTexture==NULL){
+		printf("Failed to load texture image!\n");
+		success=false;
+	}
 
 	gKeyPressSurface[KEY_PRESS_SURFACE_DEFAULT]=loadSurface("images/cat.bmp");
 	if(gKeyPressSurface[KEY_PRESS_SURFACE_DEFAULT] == NULL){
@@ -115,6 +145,10 @@ bool loadMedia(){
 
 void close()
 {
+	//Free loaded image
+	SDL_DestroyTexture(gTexture);
+	gTexture=NULL;
+
 	//Deallocate Surface
 	for(int i=0;i< KEY_PRESS_SURFACE_TOTAL; ++i){
 		SDL_FreeSurface(gKeyPressSurface[i]);
@@ -126,6 +160,7 @@ void close()
 	gWindow=NULL;
 
 	//Quit SDl subsystems
+	IMG_Quit();
 	SDL_Quit();
 }
 
@@ -150,6 +185,33 @@ SDL_Surface* loadSurface( std::string path)
 	}
 
 	return optimizedSurface;
+}
+
+SDL_Texture* loadTexture( std::string path )
+{
+	//The final texture
+	SDL_Texture* newTexture = NULL;
+
+	//Load image at specified path
+	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
+	if( loadedSurface == NULL )
+	{
+		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
+	}
+	else
+	{
+		//Create texture from surface pixels
+        newTexture = SDL_CreateTextureFromSurface( gRenderer, loadedSurface );
+		if( newTexture == NULL )
+		{
+			printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
+		}
+
+		//Get rid of old loaded surface
+		SDL_FreeSurface( loadedSurface );
+	}
+
+	return newTexture;
 }
 
 int main(int argc, char* args[])
